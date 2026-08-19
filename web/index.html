@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>行旅地圖工坊</title>
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img"><path d="M9 34c7-2 8-12 15-13 6-1 7 9 15 8"/><path d="M11 12h12l-4 7h13"/><circle cx="10" cy="34" r="3"/><circle cx="39" cy="29" r="3"/></svg>
+        </div>
+        <div>
+          <h1>行旅地圖工坊</h1>
+          <p>從原始遊記到可審核的歷史行程</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span id="save-indicator" class="save-indicator">尚未建立專案</span>
+        <button id="new-project-button" class="button button-ghost" type="button">新專案</button>
+        <button id="submit-button" class="button button-primary" type="button" disabled>
+          <span>提交全部判定</span>
+          <span id="pending-pill" class="button-pill">0</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar">
+        <nav class="step-tabs" aria-label="工作流程">
+          <button class="step-tab active" type="button" data-tab="source">
+            <span>1</span><b>原文</b>
+          </button>
+          <button class="step-tab" type="button" data-tab="review">
+            <span>2</span><b>審核</b><i id="review-count">0</i>
+          </button>
+          <button class="step-tab" type="button" data-tab="export">
+            <span>3</span><b>匯出</b>
+          </button>
+        </nav>
+
+        <section id="source-tab" class="tab-panel active" data-panel="source">
+          <div class="panel-intro">
+            <p class="eyebrow">徐霞客行旅資料庫</p>
+            <h2>先從三篇文本開始</h2>
+            <p>每篇都是獨立專案，共用同一套地名、坐標、行程核定與匯出流程。</p>
+          </div>
+
+          <section class="project-library" aria-labelledby="project-library-title">
+            <div class="library-heading">
+              <div><span>文本資料庫</span><strong id="project-library-title">選擇研究文本</strong></div>
+              <b id="library-count">3 篇</b>
+            </div>
+            <div id="project-library-list" class="project-library-list" aria-live="polite">
+              <div class="library-loading">正在讀取三篇文本…</div>
+            </div>
+          </section>
+
+          <details class="new-analysis">
+            <summary>新增其他遊記文本</summary>
+            <p>後續可繼續上傳 DOCX、TXT 或 MD，經 Agent 分析後加入同一資料庫格式。</p>
+
+          <label class="field-label" for="project-title">專案名稱</label>
+          <input id="project-title" class="text-input" type="text" placeholder="例如：浙遊日記">
+
+          <label class="field-label" for="travel-date">旅行日期／年代</label>
+          <input id="travel-date" class="text-input" type="text" placeholder="例如：明萬曆四十一年（可留空）">
+
+          <div class="field-row">
+            <label class="field-label" for="source-text">原始文本</label>
+            <span id="character-count" class="field-hint">0 字</span>
+          </div>
+          <textarea id="source-text" class="source-text" placeholder="在這裡貼上文言文、繁體或簡體遊記……"></textarea>
+
+          <div id="file-drop" class="file-drop" tabindex="0" role="button" aria-label="上傳 TXT、MD 或 DOCX">
+            <input id="file-input" type="file" accept=".txt,.md,.docx,.json" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 15v4h14v-4"/></svg>
+            <div><strong>選擇文件</strong><span>支援 TXT、MD、DOCX；JSON 可恢復審核專案</span></div>
+          </div>
+
+          <details class="advanced-input">
+            <summary>加入地方志或外部資料（可選）</summary>
+            <textarea id="external-data" rows="5" placeholder="可貼入地方志、考證筆記或已知行政沿革。Agent 會把它與遊記正文分開使用。"></textarea>
+          </details>
+
+          <div id="agent-status" class="agent-status checking">
+            <span class="status-dot"></span>
+            <div><strong>正在檢查 Agent</strong><small>請稍候</small></div>
+          </div>
+
+          <button id="analyze-button" class="button button-primary button-large" type="button">
+            <span class="button-icon" aria-hidden="true">✦</span>
+            <span>分析文本並建立地圖</span>
+          </button>
+          <button id="load-sample-button" class="button button-secondary button-large" type="button">載入《浙遊日記》</button>
+
+          </details>
+
+          <div class="workflow-note">
+            <strong>判定原則</strong>
+            <p>「GIS 是否收錄」與「作者是否經過」分開判定；抵達、經過、停宿、遊覽才納入路線，未能唯一核實的坐標留空。</p>
+          </div>
+        </section>
+
+        <section id="review-tab" class="tab-panel" data-panel="review">
+          <div class="panel-intro compact">
+            <p class="eyebrow">逐筆覆核</p>
+            <h2 id="review-title">地名判定</h2>
+            <p id="project-summary">載入專案後，地名提及會顯示在這裡。</p>
+          </div>
+
+          <div class="review-toolbar">
+            <label class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+              <input id="review-search" type="search" placeholder="搜尋地名或證據">
+            </label>
+            <select id="review-filter" class="select-input" aria-label="篩選判定狀態">
+              <option value="pending">只看待人工</option>
+              <option value="coordinate_pending">待核坐標</option>
+              <option value="visit_pending">待判是否經過</option>
+              <option value="shidian">已有識典證據</option>
+              <option value="all">全部地名</option>
+              <option value="visited">經過</option>
+              <option value="not_visited">未經過</option>
+              <option value="uncertain">無法判斷</option>
+              <option value="missing">缺少坐標</option>
+              <option value="warnings">路線異常</option>
+            </select>
+          </div>
+
+          <div class="review-progress">
+            <div><span>人工覆核</span><strong id="progress-label">0 / 0</strong></div>
+            <div class="progress-track"><span id="progress-bar"></span></div>
+          </div>
+
+          <div class="bulk-actions">
+            <button id="add-place-button" type="button">＋ 新增地點</button>
+            <button id="resolve-pending-button" type="button">待判行程設為無法判斷</button>
+          </div>
+
+          <div id="mention-list" class="mention-list">
+            <div class="empty-state small">
+              <span>⌖</span>
+              <p>尚未有可審核的地名</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="export-tab" class="tab-panel" data-panel="export">
+          <div class="panel-intro">
+            <p class="eyebrow">研究成果</p>
+            <h2>匯出與保存</h2>
+            <p>所有輸出都包含人工判定、原文證據、坐標來源與路線順序。</p>
+          </div>
+
+          <div id="export-readiness" class="export-readiness">
+            <span>尚未提交判定</span>
+            <strong>完成審核後即可匯出正式成果</strong>
+          </div>
+
+          <div class="export-grid">
+            <button class="export-card" type="button" data-export="xlsx">
+              <span class="file-badge green">XLSX</span>
+              <div><strong>審核工作簿</strong><small>地名審核、確認行程與專案資訊</small></div>
+              <b>↓</b>
+            </button>
+            <button class="export-card" type="button" data-export="json">
+              <span class="file-badge purple">JSON</span>
+              <div><strong>完整專案資料</strong><small>適合保存、再次載入或串接系統</small></div>
+              <b>↓</b>
+            </button>
+            <button class="export-card" type="button" data-export="geojson">
+              <span class="file-badge blue">GEO</span>
+              <div><strong>GeoJSON</strong><small>地點與已確認路線圖層</small></div>
+              <b>↓</b>
+            </button>
+            <button class="export-card" type="button" data-export="html">
+              <span class="file-badge amber">HTML</span>
+              <div><strong>獨立互動地圖</strong><small>可直接開啟或交付他人查看</small></div>
+              <b>↓</b>
+            </button>
+            <button class="export-card" type="button" data-export="csv">
+              <span class="file-badge slate">CSV</span>
+              <div><strong>通用表格</strong><small>每次地名提及一行</small></div>
+              <b>↓</b>
+            </button>
+          </div>
+
+          <div class="privacy-note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>
+            <p><strong>金鑰不會進入瀏覽器或匯出文件</strong><span>OpenAI API 金鑰只由本機伺服器讀取。</span></p>
+          </div>
+        </section>
+      </aside>
+
+      <section class="map-stage" aria-label="互動地圖">
+        <div id="map"></div>
+
+        <div id="map-empty" class="map-empty">
+          <div class="empty-compass">⌖</div>
+          <h2>地圖正在等待一篇遊記</h2>
+          <p>貼入原文或載入徐霞客示例，開始建立可審核的歷史行程。</p>
+          <button type="button" data-jump="source">開始建立</button>
+        </div>
+
+        <div class="map-metrics" id="map-metrics" hidden>
+          <div><span>地名提及</span><strong id="metric-mentions">0</strong></div>
+          <div><span>有坐標</span><strong id="metric-geocoded">0</strong></div>
+          <div><span>路線節點</span><strong id="metric-route">0</strong></div>
+          <div class="metric-warning"><span>異常跳點</span><strong id="metric-warnings">0</strong></div>
+        </div>
+
+        <div id="map-legend" class="map-legend" hidden>
+          <strong>圖例</strong>
+          <span><i class="legend-dot prefecture"></i>府級</span>
+          <span><i class="legend-dot county"></i>縣級</span>
+          <span><i class="legend-dot other"></i>其他經過地點</span>
+          <span><i class="legend-symbol pending">?</i>待人工核定</span>
+          <span><i class="legend-symbol excluded">×</i>未經過</span>
+          <span><i class="legend-line"></i>已提交路線</span>
+        </div>
+
+        <button id="fit-map-button" class="map-fab" type="button" title="顯示全部地點" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5m13 5h5v-5"/></svg>
+        </button>
+
+        <div id="change-banner" class="change-banner" hidden>
+          <span>判定已更改，路線尚未更新</span>
+          <button type="button">提交並重算</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="edit-dialog" class="modal">
+    <form method="dialog" id="edit-form">
+      <header><div><p class="eyebrow">調整記錄</p><h2 id="edit-dialog-title">編輯地點</h2></div><button value="cancel" aria-label="關閉">×</button></header>
+      <input id="edit-id" type="hidden">
+      <div class="form-grid">
+        <label><span>原文地名</span><input id="edit-original-name" required></label>
+        <label><span>規範地名</span><input id="edit-normalized-name" required></label>
+        <label><span>日期／篇章</span><input id="edit-date"></label>
+        <label><span>地名類型</span><input id="edit-type"></label>
+        <label><span>地圖分類</span><select id="edit-administrative-level"><option value="prefecture">府級</option><option value="county">縣級</option><option value="other">其他經過地點</option></select></label>
+        <label><span>GIS 收錄判定</span><select id="edit-gis-decision"><option value="keep">保留</option><option value="discard">不保留</option><option value="review">待核</option></select></label>
+        <label><span>記錄層級</span><select id="edit-record-level"><option value="core">核心地名</option><option value="route_landmark">路線輔助地標</option><option value="excluded">排除項</option><option value="review">待核地名</option></select></label>
+        <label><span>經過狀態</span><select id="edit-movement-type"><option value="reached">到達</option><option value="passed">經過</option><option value="stayed">停宿／停泊</option><option value="visited">遊覽</option><option value="viewed">遙望</option><option value="direction">方向或支路</option><option value="other_person">他人行程</option><option value="historical_memory">歷史回憶</option><option value="referenced">一般提及</option><option value="unknown">無法判定</option></select></label>
+        <label><span>定位狀態</span><select id="edit-location-status"><option value="locatable">可定位</option><option value="regional">區域級定位</option><option value="relative">相對位置</option><option value="unlocatable">無法定位</option><option value="unverified">未查證</option></select></label>
+        <label><span>路線順序</span><input id="edit-sequence" type="number" min="1" step="1"></label>
+        <label><span>可信度</span><select id="edit-confidence"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
+        <label><span>府級歸屬</span><input id="edit-prefecture"></label>
+        <label><span>縣級歸屬</span><input id="edit-county"></label>
+        <label class="full"><span>簡稱或異名關係</span><input id="edit-alias"></label>
+        <label><span>上一實際行程地點</span><input id="edit-previous-place"></label>
+        <label><span>下一實際行程地點</span><input id="edit-next-place"></label>
+        <label><span>鄰接關係</span><select id="edit-adjacency-type"><option value="mileage">明確里程</option><option value="direction">明確方向</option><option value="unknown">無法判定</option></select></label>
+        <label><span>緯度</span><input id="edit-latitude" type="number" min="-90" max="90" step="any"></label>
+        <label><span>經度</span><input id="edit-longitude" type="number" min="-180" max="180" step="any"></label>
+        <label class="full"><span>坐標來源</span><input id="edit-source" placeholder="例如：CHGIS、OpenStreetMap、人工核定"></label>
+        <label class="full"><span>坐標證據</span><input id="edit-coordinate-evidence" placeholder="例如：CHGIS 實體 ID、同名地核對依據"></label>
+        <label class="full"><span>坐標來源連結</span><input id="edit-source-url" type="url"></label>
+        <label class="full"><span>證據原句</span><textarea id="edit-evidence" rows="3"></textarea></label>
+        <label class="full"><span>判定理由／備註</span><textarea id="edit-reason" rows="3"></textarea></label>
+      </div>
+      <footer>
+        <button id="delete-mention-button" class="button button-danger" type="button">刪除這筆</button>
+        <span></span>
+        <button class="button button-ghost" value="cancel">取消</button>
+        <button id="save-edit-button" class="button button-primary" type="submit" value="default">保存更改</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="geocode-dialog" class="modal geocode-modal">
+    <form method="dialog">
+      <header><div><p class="eyebrow">OpenStreetMap</p><h2>選擇坐標候選</h2></div><button value="cancel" aria-label="關閉">×</button></header>
+      <div id="geocode-results" class="geocode-results"></div>
+      <footer><span></span><span></span><button class="button button-ghost" value="cancel">取消</button></footer>
+    </form>
+  </dialog>
+
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <div id="busy-overlay" class="busy-overlay" hidden>
+    <div class="busy-card"><span class="spinner"></span><strong id="busy-title">正在分析文本</strong><p id="busy-detail">這可能需要一點時間，請勿關閉頁面。</p></div>
+  </div>
+
+  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script src="/app.js" defer></script>
+</body>
+</html>
