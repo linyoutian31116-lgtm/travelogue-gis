@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Virtual environments
+.venv/
+venv/
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Runtime and test artifacts
+*.log
+test-results/
+playwright-report/
+tests/*_preview.png

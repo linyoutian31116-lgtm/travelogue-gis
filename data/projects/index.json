@@ -1,0 +1,35 @@
+[
+  {
+    "id": "zheyou",
+    "title": "徐霞客《浙遊日記》",
+    "filename": "徐霞客游记_浙游日记(上海古籍出版社).docx",
+    "summary": "共 98 次有坐標地名提及；保留既有人工審核資料，並可再次覆核行程狀態與坐標。",
+    "mentionCount": 98,
+    "geocodedCount": 98,
+    "routeCount": 52,
+    "reviewCount": 52,
+    "dataFile": "zheyou.json"
+  },
+  {
+    "id": "yuexi4",
+    "title": "徐霞客《粵西遊記四》",
+    "filename": "粵西游記4.docx",
+    "summary": "共 70 次地名提及，70 筆已有坐標；路線與坐標待核項可分開人工判定。 已併入 10 條識典地方志／古籍查證。",
+    "mentionCount": 70,
+    "geocodedCount": 70,
+    "routeCount": 61,
+    "reviewCount": 61,
+    "dataFile": "yuexi4.json"
+  },
+  {
+    "id": "qianyou1",
+    "title": "徐霞客《黔遊日記一》",
+    "filename": "黔游日记一.docx",
+    "summary": "共 103 次地名提及，103 筆已有坐標；路線與坐標待核項可分開人工判定。 已併入 28 條識典地方志／古籍查證。",
+    "mentionCount": 103,
+    "geocodedCount": 103,
+    "routeCount": 93,
+    "reviewCount": 85,
+    "dataFile": "qianyou1.json"
+  }
+]
