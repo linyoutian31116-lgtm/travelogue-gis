@@ -2,7 +2,8 @@ services:
   - type: web
     name: travelogue-gis
     runtime: python
+    plan: free
+    region: singapore
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/status
-
